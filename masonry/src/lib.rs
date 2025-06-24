@@ -116,6 +116,7 @@ impl MasonryState {
                     default_properties,
                     use_system_fonts: true,
                     size_policy: WindowSizePolicy::User,
+                    size: Default::default(),
                     scale_factor,
                     test_font: None,
                 },
@@ -169,6 +170,9 @@ impl<Driver: AppDriver> MasonryViewPeer<Driver> {
                     debug!("Action {:?} on widget {:?}", action, widget_id);
                     self.app_driver
                         .on_action(&mut driver_ctx, widget_id, action);
+                }
+                RenderRootSignal::ClipboardStore(..) => {
+                    // TODO
                 }
                 RenderRootSignal::StartIme => {
                     ctx.push_static_deferred_callback(show_soft_input);
@@ -228,6 +232,15 @@ impl<Driver: AppDriver> MasonryViewPeer<Driver> {
                     };
                     info!("Widget selected in inspector: {widget_id} - {display_name}");
                 }
+                RenderRootSignal::NewLayer(..) => {
+                    // TODO
+                }
+                RenderRootSignal::RepositionLayer(..) => {
+                    // TODO
+                }
+                RenderRootSignal::RemoveLayer(..) => {
+                    // TODO
+                }
             }
         }
 
@@ -243,10 +256,11 @@ impl<Driver: AppDriver> MasonryViewPeer<Driver> {
 
         let (scene, tree_update) = self.state.render_root.redraw();
 
-        if let Some(events) = self
-            .state
-            .accesskit_adapter
-            .update_if_active(|| tree_update)
+        if let Some(tree_update) = tree_update
+            && let Some(events) = self
+                .state
+                .accesskit_adapter
+                .update_if_active(|| tree_update)
         {
             ctx.push_dynamic_deferred_callback(move |env, view| {
                 events.raise(env, &view.0);
@@ -317,7 +331,8 @@ impl<Driver: AppDriver> MasonryViewPeer<Driver> {
         // Queue the texture to be presented on the surface.
         surface_texture.present();
 
-        device_handle.device.poll(wgpu::Maintain::Poll);
+        // `poll` has a return type for a reason, but not sure what to do with it here.
+        let _ = device_handle.device.poll(wgpu::PollType::Poll);
     }
 
     fn on_key_event<'local>(
@@ -347,7 +362,7 @@ impl<Driver: AppDriver> MasonryViewPeer<Driver> {
         if handler.requested_initial_tree {
             self.state
                 .render_root
-                .handle_window_event(WindowEvent::RebuildAccessTree);
+                .handle_window_event(WindowEvent::EnableAccessTree);
             self.handle_signals(ctx);
         }
         result
@@ -436,9 +451,9 @@ impl<Driver: AppDriver> ViewPeer for MasonryViewPeer<Driver> {
         width: jint,
         height: jint,
     ) {
-        self.state.tap_counter = TapCounter::new(ctx.view.view_configuration(&mut ctx.env));
         let android_ctx = ctx.view.context(&mut ctx.env);
         let scale_factor = scale_factor(&mut ctx.env, &android_ctx);
+        self.state.tap_counter = TapCounter::new(ctx.view.view_configuration(&mut ctx.env));
         self.state
             .render_root
             .handle_window_event(WindowEvent::Rescale(scale_factor));

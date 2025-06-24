@@ -16,7 +16,7 @@ use ui_events::{
 };
 use vello::{
     Scene,
-    kurbo::{Affine, Line, Stroke},
+    kurbo::{Affine, Line, Rect, Stroke},
     peniko::color::palette,
     peniko::{Brush, Fill},
 };
@@ -148,7 +148,7 @@ impl Editor {
     pub fn cursor_blink(&mut self) {
         self.cursor_visible = self.start_time.is_some_and(|start_time| {
             let elapsed = Instant::now().duration_since(start_time);
-            (elapsed.as_millis() / self.blink_period.as_millis()) % 2 == 0
+            (elapsed.as_millis() / self.blink_period.as_millis()).is_multiple_of(2)
         });
     }
 
@@ -346,10 +346,10 @@ impl Editor {
     }
 
     pub fn handle_accesskit_action_request(&mut self, req: &accesskit::ActionRequest) {
-        if req.action == accesskit::Action::SetTextSelection {
-            if let Some(accesskit::ActionData::SetTextSelection(selection)) = &req.data {
-                self.driver().select_from_accesskit(selection);
-            }
+        if req.action == accesskit::Action::SetTextSelection
+            && let Some(accesskit::ActionData::SetTextSelection(selection)) = &req.data
+        {
+            self.driver().select_from_accesskit(selection);
         }
     }
 
@@ -363,25 +363,26 @@ impl Editor {
     /// Returns drawn `Generation`.
     pub fn draw(&mut self, scene: &mut Scene) -> Generation {
         let transform = Affine::translate((INSET as f64, INSET as f64));
-        self.editor.selection_geometry_with(|rect, _| {
-            scene.fill(
-                Fill::NonZero,
-                transform,
-                palette::css::STEEL_BLUE,
-                None,
-                &rect,
-            );
-        });
-        if self.cursor_visible {
-            if let Some(cursor) = self.editor.cursor_geometry(5.0) {
+        self.editor
+            .selection_geometry_with(|parley::BoundingBox { x0, x1, y0, y1 }, _| {
                 scene.fill(
                     Fill::NonZero,
                     transform,
-                    palette::css::CADET_BLUE,
+                    palette::css::STEEL_BLUE,
                     None,
-                    &cursor,
+                    &Rect { x0, x1, y0, y1 },
                 );
-            }
+            });
+        if self.cursor_visible
+            && let Some(parley::BoundingBox { x0, x1, y0, y1 }) = self.editor.cursor_geometry(5.0)
+        {
+            scene.fill(
+                Fill::NonZero,
+                transform,
+                palette::css::CADET_BLUE,
+                None,
+                &Rect { x0, x1, y0, y1 },
+            );
         }
         let layout = self.editor.layout(&mut self.font_cx, &mut self.layout_cx);
         for line in layout.lines() {

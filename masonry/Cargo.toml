@@ -6,6 +6,6 @@ edition = "2024"
 [dependencies]
 accesskit_android = "0.4.0"
 android-view = { path = ".." }
-masonry_core = { git = "https://github.com/linebender/xilem" }
+masonry_core = { git = "https://github.com/linebender/xilem", rev = "2750659" }
 pollster = "0.4.0"
 tracing = "0.1.40"

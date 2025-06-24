@@ -425,9 +425,11 @@ impl<'local> MotionEvent<'local> {
         let contact_geometry = if pointer.pointer_type == PointerType::Touch {
             let height = self.axis(env, Axis::TouchMajor, action_index) as f64;
             let width = self.axis(env, Axis::TouchMinor, action_index) as f64;
-            (height > 0.0 && width > 0.0)
-                .then_some(ContactGeometry { width, height })
-                .unwrap_or_default()
+            if height > 0.0 && width > 0.0 {
+                ContactGeometry { width, height }
+            } else {
+                Default::default()
+            }
         } else {
             Default::default()
         };
@@ -492,9 +494,11 @@ impl<'local> MotionEvent<'local> {
                             self.historical_axis(env, Axis::TouchMajor, action_index, pos) as f64;
                         let width =
                             self.historical_axis(env, Axis::TouchMinor, action_index, pos) as f64;
-                        (height > 0.0 && width > 0.0)
-                            .then_some(ContactGeometry { width, height })
-                            .unwrap_or_default()
+                        if height > 0.0 && width > 0.0 {
+                            ContactGeometry { width, height }
+                        } else {
+                            Default::default()
+                        }
                     } else {
                         Default::default()
                     };

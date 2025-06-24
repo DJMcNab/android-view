@@ -12,7 +12,7 @@ use android_view::{
 };
 use masonry::{
     core::{ErasedAction, NewWidget, Properties, Widget, WidgetId},
-    properties::Padding,
+    properties::{Padding, types::Length},
     theme::default_property_set,
     widgets::{Button, ButtonPress, Flex, Label, Portal, TextAction, TextArea, TextInput},
 };
@@ -20,7 +20,7 @@ use masonry_android::{AppDriver, DriverCtx};
 use std::{ffi::c_void, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-const WIDGET_SPACING: f64 = 5.0;
+const WIDGET_SPACING: Length = Length::const_px(5.0);
 
 struct Driver {
     next_task: String,
@@ -29,7 +29,7 @@ struct Driver {
 impl AppDriver for Driver {
     fn on_action(&mut self, ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, action: ErasedAction) {
         if action.is::<ButtonPress>() {
-            ctx.render_root().edit_root_widget(|mut root| {
+            ctx.render_root().edit_base_layer(|mut root| {
                 let mut portal = root.downcast::<Portal<Flex>>();
                 let mut flex = Portal::child_mut(&mut portal);
                 Flex::add_child(&mut flex, Label::new(self.next_task.clone()).with_auto_id());
@@ -59,8 +59,8 @@ fn make_widget_tree() -> impl Widget {
             .with_child(NewWidget::new_with_props(
                 Flex::row()
                     .with_flex_child(TextInput::new("").with_auto_id(), 1.0)
-                    .with_child(Button::new("Add task").with_auto_id()),
-                Properties::new().with(Padding::all(WIDGET_SPACING)),
+                    .with_child(Button::new(NewWidget::new(Label::new("Add task"))).with_auto_id()),
+                Properties::new().with(Padding::all(WIDGET_SPACING.get())),
             ))
             .with_spacer(WIDGET_SPACING)
             .with_auto_id(),

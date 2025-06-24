@@ -290,7 +290,8 @@ impl DemoViewPeer {
         // Queue the texture to be presented on the surface.
         surface_texture.present();
 
-        device_handle.device.poll(wgpu::Maintain::Poll);
+        // `poll` has a return type for a reason, but not sure what to do with it here.
+        let _ = device_handle.device.poll(wgpu::PollType::Poll);
     }
 
     fn set_composing_text_internal(&mut self, text: &str, new_cursor_position: jint) {
