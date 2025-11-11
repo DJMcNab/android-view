@@ -22,6 +22,7 @@ pub use ime::*;
 mod surface;
 pub use surface::*;
 mod util;
+pub use util::{abort_on_panic, forward_stdio_to_logcat};
 mod view;
 pub use view::*;
 mod view_configuration;

@@ -240,18 +240,20 @@ pub(crate) fn with_peer<'local, F, T: Default>(
 where
     F: FnOnce(&mut CallbackCtx<'local>, &mut dyn ViewPeer) -> T,
 {
-    let map = PEER_MAP.lock().unwrap();
-    let Some(peer) = map.get(&id) else {
-        return T::default();
-    };
-    let peer = Rc::clone(&**peer);
-    drop(map);
-    let mut peer = peer.borrow_mut();
-    let mut ctx = CallbackCtx::new(env, view);
-    let result = f(&mut ctx, &mut **peer);
-    drop(peer);
-    ctx.finish();
-    result
+    abort_on_panic(|| {
+        let map = PEER_MAP.lock().unwrap();
+        let Some(peer) = map.get(&id) else {
+            return T::default();
+        };
+        let peer = Rc::clone(&**peer);
+        drop(map);
+        let mut peer = peer.borrow_mut();
+        let mut ctx = CallbackCtx::new(env, view);
+        let result = f(&mut ctx, &mut **peer);
+        drop(peer);
+        ctx.finish();
+        result
+    })
 }
 
 extern "system" fn on_measure<'local>(

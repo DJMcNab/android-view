@@ -3,6 +3,7 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use android_logger::Filter;
 use android_view::{
     jni::{
         JNIEnv, JavaVM,
@@ -10,6 +11,7 @@ use android_view::{
     },
     *,
 };
+use log::LevelFilter;
 use masonry::{
     core::{ErasedAction, NewWidget, Properties, Widget, WidgetId},
     properties::{Padding, types::Length},
@@ -18,7 +20,8 @@ use masonry::{
 };
 use masonry_android::{AppDriver, DriverCtx};
 use std::{ffi::c_void, sync::Arc};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing::span;
+use tracing_subscriber::{filter::Builder, layer::SubscriberExt, util::SubscriberInitExt};
 
 const WIDGET_SPACING: Length = Length::const_px(5.0);
 
@@ -89,6 +92,13 @@ extern "system" fn new_view_peer<'local>(
 /// There is no alternative, interacting with JNI is always unsafe at some level.
 #[unsafe(no_mangle)]
 pub unsafe extern "system" fn JNI_OnLoad(vm: *mut RawJavaVM, _: *mut c_void) -> jint {
+    forward_stdio_to_logcat();
+    android_logger::init_once(
+        android_logger::Config::default()
+            .with_filter(android_logger::FilterBuilder::from_env("RUST_LOG").build())
+            .with_max_level(LevelFilter::Debug)
+            .with_tag("android-view-demo"),
+    );
     // This will try to create a "log" logger, and error because one was already created above
     // We therefore ignore the error
     // Ideally, we'd only ignore the SetLoggerError, but the only way that's possible is to inspect

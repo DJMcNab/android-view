@@ -2,12 +2,20 @@ package org.linebender.android.viewdemo;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.system.ErrnoException;
+import android.system.Os;
 import android.view.View;
 import android.widget.FrameLayout;
 
 public final class DemoActivity extends Activity {
     static {
-         System.loadLibrary("main");
+        try {
+            Os.setenv("RUST_BACKTRACE", "short", false);
+            Os.setenv("WGPU_DISCARD_HAL_LABELS", "1", false);
+        } catch (ErrnoException e) {
+            throw new RuntimeException(e);
+        }
+        System.loadLibrary("main");
     }
 
     @Override
